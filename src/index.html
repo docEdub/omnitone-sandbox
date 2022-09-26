@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Omnitone sandbox</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        * {
+            margin: 0;
+            outline: none;
+        }
+
+        canvas {
+            position: absolute;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+    <%= htmlWebpackPlugin.options.externals %>
+</head>
+
+<body>
+    <canvas />
+    <!-- <audio id="audio" src="./assets/mixdown-wyzx.aif-normalized.ogg"></audio> -->
+    <audio id="audio-wy" src="./assets/mixdown-wy.m4a"></audio>
+    <audio id="audio-zx" src="./assets/mixdown-zx.m4a"></audio>
+</body>
+
+</html>
