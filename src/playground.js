@@ -16,6 +16,7 @@ var createScene = function () {
     const camera = new BABYLON.FreeCamera(`camera`, new BABYLON.Vector3(0, 2, 10))
     camera.setTarget(new BABYLON.Vector3(0, 0, 0))
     camera.attachControl()
+    camera.angularSensibility = 5000
 
     const light = new BABYLON.HemisphericLight(`light`, new BABYLON.Vector3(0, 1, 0), scene)
     light.intensity = 0.7
