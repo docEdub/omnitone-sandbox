@@ -16,7 +16,7 @@ var createScene = function () {
     const camera = new BABYLON.FreeCamera(`camera`, new BABYLON.Vector3(0, 2, 10))
     camera.setTarget(new BABYLON.Vector3(0, 0, 0))
     camera.attachControl()
-    camera.angularSensibility = 5000
+    // camera.angularSensibility = 5000
 
     const light = new BABYLON.HemisphericLight(`light`, new BABYLON.Vector3(0, 1, 0), scene)
     light.intensity = 0.7
@@ -102,6 +102,8 @@ var createScene = function () {
     // const audioWY = new BABYLON.Sound(`audio.wy`, `./assets/mixdown-wy.mp3`)
     // const audioZX = new BABYLON.Sound(`audio.wy`, `./assets/mixdown-zx.mp3`)
 
+    let foaRenderer = null
+
     const button = document.createElement(`button`)
     button.textContent = `start`
     button.style.color = `black`
@@ -122,22 +124,10 @@ var createScene = function () {
         audioElementZX.pause()
         audioElementWY.currentTime = 0
 
-        // audioWY.play()
-        // audioWY.pause()
-        // audioWY.currentTime = 0
-
-        // audioZX.play()
-        // audioZX.pause()
-        // audioZX.currentTime = 0
-
         const audioContext = engine.getAudioContext()
         const audioElementSourceWY = audioContext.createMediaElementSource(audioElementWY)
         const audioElementSourceZX = audioContext.createMediaElementSource(audioElementZX)
-        // const audioNodeWY = audioWY.getSoundGain()
-        // const audioNodeZX = audioZX.getSoundGain()
-        // audioNodeWY.disconnect()
-        // audioNodeZX.disconnect()
-        const foaRenderer = Omnitone.createFOARenderer(audioContext)
+        foaRenderer = Omnitone.createFOARenderer(audioContext)
 
         foaRenderer.initialize().then(function () {
             const channelMerger = new ChannelMergerNode(audioContext, {
@@ -150,38 +140,48 @@ var createScene = function () {
             audioElementSourceWY.connect(channelMerger, 0, 1)
             audioElementSourceZX.connect(channelMerger, 0, 3)
             audioElementSourceZX.connect(channelMerger, 0, 2)
-            // audioNodeWY.connect(channelMerger, 0, 0)
-            // audioNodeWY.connect(channelMerger, 0, 1)
-            // audioNodeZX.connect(channelMerger, 0, 2)
-            // audioNodeZX.connect(channelMerger, 0, 3)
             channelMerger.connect(foaRenderer.input)
             foaRenderer.output.connect(audioContext.destination)
+            BABYLON.Matrix.RotationYToRef(rotationCurrent, rotationMatrix)
+            foaRenderer.setRotationMatrix4(rotationMatrix.m)
             audioElementWY.play()
             audioElementZX.play()
-            // audioWY.play()
-            // audioZX.play()
             audioContext.resume()
 
             document.body.removeChild(button)
-
-            const omnitoneMatrix = new BABYLON.Matrix
-            const rotationMatrix = BABYLON.Matrix.RotationAxis(BABYLON.Vector3.Up(), HALF_PI)
-
-            setInterval(() => {
-                camera.getWorldMatrix().multiplyToRef(rotationMatrix, omnitoneMatrix)
-                foaRenderer.setRotationMatrix4(omnitoneMatrix.m)
-            }, 8)
         })
     }
 
-    // BABYLON.Engine.audioEngine.onAudioUnlockedObservable.addOnce(() => {
-    //     audioWY.play()
-    //     audioZX.play()
-    //     audioContext.resume()
-    // })
-
     scene.onReadyObservable.add(() => {
         button.style.display = 'block'
+    })
+
+    const maxRotationAmountPerFrame = 0.05
+    let rotationInitialized = false
+    let rotationTarget = 0
+    let rotationCurrent = 0
+    const rotationMatrix = new BABYLON.Matrix
+    scene.registerBeforeRender(() => {
+        rotationTarget = camera.rotation.y + HALF_PI
+        if (Math.abs(rotationTarget - rotationCurrent) < maxRotationAmountPerFrame) {
+            return
+        }
+        if (!rotationInitialized) {
+            rotationInitialized = true
+            rotationCurrent = rotationTarget
+        }
+        if (rotationTarget < rotationCurrent) {
+            rotationCurrent -= maxRotationAmountPerFrame
+        }
+        else if (rotationCurrent < rotationTarget) {
+            rotationCurrent += maxRotationAmountPerFrame
+        }
+        console.log(`rotation: ${rotationCurrent}`)
+
+        if (foaRenderer) {
+            BABYLON.Matrix.RotationYToRef(rotationCurrent, rotationMatrix)
+            foaRenderer.setRotationMatrix4(rotationMatrix.m)
+        }
     })
 
     //#endregion
