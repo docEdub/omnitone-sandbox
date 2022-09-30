@@ -96,12 +96,34 @@ var createScene = function () {
 
     //#region Omnitone setup
 
-    let audioElementWY = document.getElementById(`audio-wy`)
-    let audioElementZX = document.getElementById(`audio-zx`)
+    const soundOptions = {
+        autoplay: false,
+        loop: false,
+        spatialSound: false,
+        streaming: true
+    }
+    let audioWY_isReady = false
+    let audioZX_isReady = false
+    const audioWY = new BABYLON.Sound(
+        `normalized.wy`,
+        `./assets/normalized-wy.mp3`,
+        null,
+        () => {
+            console.log(`audioWY is ready`)
+            audioWY_isReady = true
+        },
+        soundOptions)
+        const audioZX = new BABYLON.Sound(
+            `normalized.zx`,
+            `./assets/normalized-zx.mp3`,
+            null,
+            () => {
+                console.log(`audioZX is ready`)
+                audioZX_isReady = true
+            },
+        soundOptions)
 
-    // const audioWY = new BABYLON.Sound(`audio.wy`, `./assets/mixdown-wy.mp3`)
-    // const audioZX = new BABYLON.Sound(`audio.wy`, `./assets/mixdown-zx.mp3`)
-
+    const audioContext = engine.getAudioContext()
     let foaRenderer = null
 
     const button = document.createElement(`button`)
@@ -116,17 +138,16 @@ var createScene = function () {
     button.style.height = '64px'
     document.body.appendChild(button)
     button.onclick = () => {
-        audioElementWY.play()
-        audioElementWY.pause()
-        audioElementWY.currentTime = 0
+        audioContext.resume()
 
-        audioElementZX.play()
-        audioElementZX.pause()
-        audioElementWY.currentTime = 0
+        audioWY.play()
+        audioWY.stop()
+        audioWY.currentTime = 0
 
-        const audioContext = engine.getAudioContext()
-        const audioElementSourceWY = audioContext.createMediaElementSource(audioElementWY)
-        const audioElementSourceZX = audioContext.createMediaElementSource(audioElementZX)
+        audioZX.play()
+        audioZX.stop()
+        audioZX.currentTime = 0
+
         foaRenderer = Omnitone.createFOARenderer(audioContext)
 
         foaRenderer.initialize().then(function () {
@@ -136,19 +157,36 @@ var createScene = function () {
                 channelCountMode: 'explicit',
                 channelInterpretation: 'discrete'
             })
-            audioElementSourceWY.connect(channelMerger, 0, 0)
-            audioElementSourceWY.connect(channelMerger, 0, 1)
-            audioElementSourceZX.connect(channelMerger, 0, 3)
-            audioElementSourceZX.connect(channelMerger, 0, 2)
+            const audioWY_gainNode = audioWY.getSoundGain()
+            const audioZX_gainNode = audioZX.getSoundGain()
+            audioWY_gainNode.disconnect()
+            audioWY_gainNode.connect(channelMerger, 0, 0)
+            audioWY_gainNode.connect(channelMerger, 0, 1)
+            audioZX_gainNode.disconnect()
+            audioZX_gainNode.connect(channelMerger, 0, 3)
+            audioZX_gainNode.connect(channelMerger, 0, 2)
             channelMerger.connect(foaRenderer.input)
             foaRenderer.output.connect(audioContext.destination)
+            foaRenderer.setRenderingMode('bypass')
             BABYLON.Matrix.RotationYToRef(rotationCurrent, rotationMatrix)
             foaRenderer.setRotationMatrix4(rotationMatrix.m)
-            audioElementWY.play()
-            audioElementZX.play()
-            audioContext.resume()
+            audioContext.suspend()
 
-            document.body.removeChild(button)
+            const intervalId = setInterval(() => {
+                if (audioWY_isReady && audioZX_isReady) {
+                    console.log(`Playing ...`)
+                    audioWY.stop()
+                    audioWY.currentTime = 0
+                    audioWY.play()
+                    audioZX.stop()
+                    audioZX.currentTime = 0
+                    audioZX.play()
+                    audioContext.resume()
+                    clearInterval(intervalId)
+                }
+            }, 1000)
+
+            button.style.display = 'none'
         })
     }
 
