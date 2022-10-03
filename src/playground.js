@@ -167,7 +167,6 @@ var createScene = function () {
             audioZX_gainNode.connect(channelMerger, 0, 2)
             channelMerger.connect(foaRenderer.input)
             foaRenderer.output.connect(audioContext.destination)
-            foaRenderer.setRenderingMode('bypass')
             BABYLON.Matrix.RotationYToRef(rotationCurrent, rotationMatrix)
             foaRenderer.setRotationMatrix4(rotationMatrix.m)
             audioContext.suspend()
